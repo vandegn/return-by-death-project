@@ -45,23 +45,21 @@ public class ReturnByDeath implements ModInitializer {
 	private static final float RESPAWN_UPDATE_CHANCE = 1f / 50000f; // will trigger around every 40ish mins
 	@Override
 	public void onInitialize() {
+		CustomSounds.initialize();
 		ServerWorldEvents.LOAD.register((server, world) -> {
 			server.getGameRules().getRule(GameRules.RULE_DO_IMMEDIATE_RESPAWN).set(true, server);
 		});
 
 		ServerPlayerEvents.AFTER_RESPAWN.register((oldplayer, newplayer, alive) -> {
 			if (!alive) {
-				UUID id = oldplayer.getUUID();
+				UUID id = newplayer.getUUID();
 				RespawnLocation spawn = LAST_SPAWN.get(id);
-				newplayer.sendSystemMessage(
-						Component.literal("Player " + newplayer.getUUID()
-								+ " spawn is: " + LAST_SPAWN.get(newplayer.getUUID()))
-				);
-				BlockPos checkBed = spawn.pos;
-				var state = newplayer.server.getLevel(spawn.dimension).getBlockState(spawn.pos);
+				//test(newplayer);
+				BlockPos checkBed = spawn.pos();
+				var state = newplayer.server.getLevel(spawn.dimension()).getBlockState(spawn.pos());
 				var block = state.getBlock();
 				boolean stillValid = !HAS_SLEPT.contains(id) || block instanceof BedBlock || block instanceof RespawnAnchorBlock;
-				System.out.println(stillValid);
+				//System.out.println(stillValid);
 				double x = 0;
 				double y = 0;
 				double z = 0;
@@ -75,9 +73,9 @@ public class ReturnByDeath implements ModInitializer {
 					z = newplayer.server.overworld().getSharedSpawnPos().getZ();
 				}
 				newplayer.teleportTo(
-					newplayer.server.getLevel(spawn.dimension),
+					newplayer.server.getLevel(spawn.dimension()),
 					x, y, z,
-					spawn.angle,
+					spawn.angle(),
 					newplayer.getXRot()
 				);
 				newplayer.setRespawnPosition(
@@ -88,6 +86,16 @@ public class ReturnByDeath implements ModInitializer {
 						true
 				);
 			}
+			newplayer.level().playSound(
+					null,                           // null = audible to all nearby players
+					newplayer.getX(),
+					newplayer.getY(),
+					newplayer.getZ(),
+					CustomSounds.RESPAWN,
+					newplayer.getSoundSource(),     // or SoundSource.PLAYERS
+					1.0F,
+					1.0F
+			);
 		});
 		//default spawn recording that will overwrite your bed spawn on login.
 		// I think this is more like the show honestly, if you're out on some
@@ -151,8 +159,8 @@ public class ReturnByDeath implements ModInitializer {
 		});
 
 		//sounds
-		Registry.register(BuiltInRegistries.SOUND_EVENT, ResourceLocation.fromNamespaceAndPath(MOD_ID, "respawn"),
-				SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(MOD_ID, "respawn")));
+
+
 	}
 
 	public void test(ServerPlayer player) {

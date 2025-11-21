@@ -1,0 +1,10 @@
+{
+  "respawn": {
+    "subtitle": "sound.return-by-death.respawn",
+    "sounds": [
+      {
+        "name": "return-by-death:respawn"
+      }
+    ]
+  }
+}
