@@ -11,7 +11,7 @@ import rbd.ReturnByDeath;
 import net.minecraft.server.*;
 import java.util.Map;
 import java.util.UUID;
-import net.minecraft.network.chat;
+
 
 @Mixin(MinecraftServer.class)
 public class ExampleMixin {
@@ -21,14 +21,5 @@ public class ExampleMixin {
 	@Inject(at = @At("HEAD"), method = "loadLevel")
 	private void init(CallbackInfo info) {
 		// This code is injected into the start of MinecraftServer.loadLevel()V
-	}
-
-	@Inject(at = @At("TAIL"), method = "<init>")
-	private void init(Map<UUID, ReturnByDeath.RespawnLocation> map) {
-
-		ServerPlayer player = (ServerPlayer)(Object)this;
-		UUID id = player.getUUID();
-		player.sendSystemMessage(Component.literal("player " + id + " respawn location is now: " + map.get(id)));
-
 	}
 }

@@ -20,9 +20,6 @@
 		],
 		"fabric-datagen": [
 			"rbd.ReturnByDeathDataGenerator"
-		],
-		"client": [
-			"rbd.ReturnByDeathCode"
 		]
 	},
 	"mixins": [
