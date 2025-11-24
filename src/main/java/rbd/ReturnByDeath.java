@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -15,9 +16,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.resources.ResourceKey;
 import org.slf4j.Logger;
@@ -26,6 +30,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.RespawnAnchorBlock;
 
+import javax.swing.text.html.Option;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,11 +90,26 @@ public class ReturnByDeath implements ModInitializer {
 
 				if (bedOrAnchorStillThere) {
 					// Bed/anchor still exists → overwrite vanilla and force them here
-					teleport(newPlayer, targetLevel, pos);
-					playMySound(newPlayer);
+					if (block instanceof BedBlock) {
+						Direction facing = state.getValue(HorizontalDirectionalBlock.FACING);
+						Optional<Vec3> standPos = BedBlock.findStandUpPosition(EntityType.PLAYER, newPlayer.serverLevel(), pos, facing, newPlayer.getYRot());
+						if (standPos.isPresent()) pos = BlockPos.containing(standPos.get());
+						teleport(newPlayer, targetLevel, pos);
+						playMySound(newPlayer);
+					} else {
+						int charge = state.getValue(RespawnAnchorBlock.CHARGE);
+						boolean anchorIsActive = charge > 0;
+						if (anchorIsActive) {
+							teleport(newPlayer, targetLevel, pos);
+							playMySound(newPlayer);
+						}
+						playMySound(newPlayer);
+                        return;
+                    }
 				} else {
 					// Bed/anchor gone → optional: clear our record, then let vanilla handle it
 					// LAST_SPAWN.remove(id);
+					HAS_SLEPT.remove(newPlayer.getUUID());
 					playMySound(newPlayer);
 				}
 
@@ -110,7 +130,8 @@ public class ReturnByDeath implements ModInitializer {
 			var player = handler.getPlayer();
 			var level = player.serverLevel();
 			addToMap(player, level);
-			test(player);
+			playMySound(player);
+			//test(player);
 		});
 		// if a player has set their spawn with a bed recently then make that their respawn
 		// not permanent though
@@ -127,6 +148,7 @@ public class ReturnByDeath implements ModInitializer {
 			}
 			BlockState block = level.getBlockState(hit.getBlockPos());
 			if (block.getBlock() instanceof BedBlock || block.getBlock() instanceof RespawnAnchorBlock) {
+				HAS_SLEPT.add(player.getUUID());
 				addToMap(serverPlayer, hit.getBlockPos(), level);
 			}
 			return InteractionResult.PASS;
@@ -137,10 +159,10 @@ public class ReturnByDeath implements ModInitializer {
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
 				UUID id = player.getUUID();
 				RespawnLocation saved = LAST_SPAWN.get(id);
-				if (!HAS_SLEPT.contains(id) && server.getLevel(saved.dimension()).getRandom().nextFloat() < RESPAWN_UPDATE_CHANCE) {
+				if (server.getLevel(saved.dimension()).getRandom().nextFloat() < RESPAWN_UPDATE_CHANCE) {
 					Level level = player.level();
 					addToMap(player, level);
-					test(player);
+					//test(player);
 				}
 			}
 		});
