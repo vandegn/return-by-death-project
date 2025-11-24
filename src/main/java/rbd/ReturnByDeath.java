@@ -59,6 +59,7 @@ public class ReturnByDeath implements ModInitializer {
 		CustomSounds.initialize();
 		ServerWorldEvents.LOAD.register((server, world) -> {
 			server.getGameRules().getRule(GameRules.RULE_DO_IMMEDIATE_RESPAWN).set(true, server);
+			server.getGameRules().getRule(GameRules.RULE_KEEPINVENTORY).set(true, server);
 		});
 		ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
 			if (alive) return; // only care about death respawns
